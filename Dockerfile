@@ -1,4 +1,4 @@
-FROM ghcr.io/marmotdata/marmot:0.9.0
+FROM ghcr.io/marmotdata/marmot:0.11.0
 
 USER root
 COPY entrypoint.sh /usr/local/bin/aiven-entrypoint.sh
