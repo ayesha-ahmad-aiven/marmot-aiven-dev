@@ -24,4 +24,9 @@ if [ -n "${PROJECT_CA_CERT:-}" ]; then
     export MARMOT_DATABASE_SSLMODE="${MARMOT_DATABASE_SSLMODE:-verify-full}"
 fi
 
+# nginx owns the public port and fronts Marmot on loopback. See nginx.conf.
+export MARMOT_SERVER_HOST=127.0.0.1
+export MARMOT_SERVER_PORT=8081
+nginx -e /dev/stderr -c /etc/aiven-marmot/nginx.conf
+
 exec /usr/local/bin/marmot "$@"
