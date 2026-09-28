@@ -1,0 +1,35 @@
+# Works locally (`docker compose up`) and as an Aiven Runtime manifest:
+# `marmot` (build) becomes an application service, `marmot-pg` (postgres image)
+# becomes an Aiven for PostgreSQL service, and DATABASE_URL referencing
+# `@marmot-pg` becomes the credential integration between them.
+services:
+  marmot:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://marmot:marmot@marmot-pg:5432/marmot?sslmode=disable
+      MARMOT_SERVER_ENCRYPTION_KEY: ${MARMOT_SERVER_ENCRYPTION_KEY}
+      MARMOT_TELEMETRY_ENABLED: "false"
+      MARMOT_DATABASE_MAX_CONNS: "20"
+      MARMOT_DATABASE_IDLE_CONNS: "5"
+    depends_on:
+      marmot-pg:
+        condition: service_healthy
+
+  marmot-pg:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: marmot
+      POSTGRES_PASSWORD: marmot
+      POSTGRES_DB: marmot
+    volumes:
+      - marmot_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marmot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  marmot_pg_data:

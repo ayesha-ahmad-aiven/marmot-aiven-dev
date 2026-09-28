@@ -15,13 +15,24 @@ if [ -n "${DATABASE_URL:-}" ]; then
     export MARMOT_DATABASE_HOST="${hostport%%:*}"
     export MARMOT_DATABASE_PORT="${hostport##*:}"
     export MARMOT_DATABASE_NAME="${dbpart%%\?*}"
+    case "$dbpart" in
+        *sslmode=*)
+            url_sslmode=${dbpart#*sslmode=}
+            url_sslmode=${url_sslmode%%&*}
+            ;;
+        *) url_sslmode="" ;;
+    esac
 fi
 
+# Aiven Runtime only injects PROJECT_CA_CERT for some deploy paths; without it,
+# keep the URL's sslmode (Aiven: require) so TLS stays on.
 if [ -n "${PROJECT_CA_CERT:-}" ]; then
     ca_file="${TMPDIR:-/tmp}/aiven-project-ca.pem"
     printf '%s' "$PROJECT_CA_CERT" | base64 -d > "$ca_file"
     export PGSSLROOTCERT="$ca_file"
     export MARMOT_DATABASE_SSLMODE="${MARMOT_DATABASE_SSLMODE:-verify-full}"
+elif [ -n "${url_sslmode:-}" ]; then
+    export MARMOT_DATABASE_SSLMODE="${MARMOT_DATABASE_SSLMODE:-$url_sslmode}"
 fi
 
 # nginx owns the public port and fronts Marmot on loopback. See nginx.conf.
